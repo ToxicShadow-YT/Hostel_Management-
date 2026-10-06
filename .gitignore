@@ -1,0 +1,26 @@
+# Compiled Java files
+bin/
+*.class
+
+# Eclipse
+.metadata/
+.settings/
+.project
+.classpath
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# IDE
+.idea/
+.vscode/
+
+# Local database configuration
+db.properties
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
