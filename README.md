@@ -502,20 +502,35 @@ The application was designed to verify important operations such as:
 
 ## Screenshots
 
-Screenshots of the application will be added here as the project documentation is expanded.
+### Login
+![Login](docs/screenshots/login.png)
 
-Planned screens include:
+### Dashboard
+![Dashboard](docs/screenshots/dashboard.png)
 
-* Login
-* Dashboard
-* Student Management
-* Room Management
-* Room Allocation
-* Fee Management
-* Visitor Management
-* Complaint Management
-* Activity Logs
-* MySQL Database
+### Student Management
+![Student Management](docs/screenshots/students.png)
+
+### Room Management
+![Room Management](docs/screenshots/rooms.png)
+
+### Room Allocation
+![Room Allocation](docs/screenshots/allocation.png)
+
+### Fee Management
+![Fee Management](docs/screenshots/fees.png)
+
+### Visitor Management
+![Visitor Management](docs/screenshots/visitors.png)
+
+### Complaint Management
+![Complaint Management](docs/screenshots/complaints.png)
+
+### Activity Logs
+![Activity Logs](docs/screenshots/activity-logs.png)
+
+### MySQL Database
+![Database](docs/screenshots/database.png)
 
 ## Project Goals
 
