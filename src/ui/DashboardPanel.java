@@ -11,6 +11,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -45,31 +47,43 @@ public class DashboardPanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(15, 15));
+        setLayout(new BorderLayout(18, 18));
         setBackground(UIUtils.COLOR_BG);
-        setBorder(new EmptyBorder(15, 20, 15, 20));
+        setBorder(new EmptyBorder(22, 24, 22, 24));
 
-        // Top Header inside Panel
+        // Dashboard heading and refresh action
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
+        JPanel heading = new JPanel();
+        heading.setOpaque(false);
+        heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
+
         JLabel lblWelcome = new JLabel("Welcome back, " + currentUser.getFullName());
-        lblWelcome.setFont(UIUtils.FONT_TITLE);
+        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblWelcome.setForeground(UIUtils.COLOR_HEADER);
+        JLabel lblSubtitle = new JLabel("Your hostel at a glance  ·  " +
+                LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")));
+        lblSubtitle.setFont(UIUtils.FONT_REGULAR);
+        lblSubtitle.setForeground(UIUtils.COLOR_TEXT_MUTED);
+        heading.add(lblWelcome);
+        heading.add(Box.createVerticalStrut(5));
+        heading.add(lblSubtitle);
 
         JButton btnRefresh = UIUtils.createPrimaryButton("Refresh Stats");
+        btnRefresh.setToolTipText("Reload dashboard statistics and recent activity");
         btnRefresh.addActionListener(e -> refreshData());
 
-        topPanel.add(lblWelcome, BorderLayout.WEST);
+        topPanel.add(heading, BorderLayout.WEST);
         topPanel.add(btnRefresh, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
         // Center Content: Stats Cards + Quick Summaries
-        JPanel centerPanel = new JPanel(new BorderLayout(0, 15));
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 18));
         centerPanel.setOpaque(false);
 
         // 6 Statistics Cards in a 2x3 or 1x6 grid
-        JPanel statsGrid = new JPanel(new GridLayout(2, 3, 15, 15));
+        JPanel statsGrid = new JPanel(new GridLayout(2, 3, 16, 16));
         statsGrid.setOpaque(false);
 
         // Create labels for card values
@@ -110,7 +124,9 @@ public class DashboardPanel extends JPanel {
         };
         JTable allocTable = new JTable(allocationsTableModel);
         UIUtils.styleTable(allocTable);
-        allocCard.add(new JScrollPane(allocTable), BorderLayout.CENTER);
+        JScrollPane allocScrollPane = new JScrollPane(allocTable);
+        allocScrollPane.setBorder(BorderFactory.createLineBorder(UIUtils.COLOR_BORDER));
+        allocCard.add(allocScrollPane, BorderLayout.CENTER);
 
         // Recent Complaints
         JPanel compCard = UIUtils.createCardPanel();
@@ -129,7 +145,9 @@ public class DashboardPanel extends JPanel {
         };
         JTable compTable = new JTable(complaintsTableModel);
         UIUtils.styleTable(compTable);
-        compCard.add(new JScrollPane(compTable), BorderLayout.CENTER);
+        JScrollPane complaintScrollPane = new JScrollPane(compTable);
+        complaintScrollPane.setBorder(BorderFactory.createLineBorder(UIUtils.COLOR_BORDER));
+        compCard.add(complaintScrollPane, BorderLayout.CENTER);
 
         tablesPanel.add(allocCard);
         tablesPanel.add(compCard);

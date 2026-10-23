@@ -167,6 +167,8 @@ Information includes:
 * Payment mode
 * Remarks
 
+Fee amounts are displayed and logged in Indian rupees (INR), using the ₹ symbol and Indian digit grouping.
+
 Supported payment modes include:
 
 * Cash
@@ -580,11 +582,7 @@ See the [`LICENSE`](LICENSE) file for details.
 
 ## Author
 
-**Atharva Shah**
-
-Computer Engineering Student
-
-GitHub: [@AtharvaShah-Git](https://github.com/AtharvaShah-Git)
+**Ashwin** ([GitHub](https://github.com/ToxicShadow-YT))
 
 ---
 

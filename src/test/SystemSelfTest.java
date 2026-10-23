@@ -113,6 +113,7 @@ public class SystemSelfTest {
             JButton btn = UIUtils.createPrimaryButton("Test Button");
             assert btn != null;
             assert btn.getBackground().equals(UIUtils.COLOR_PRIMARY);
+            assert "₹35,000.00".equals(UIUtils.formatCurrency(new BigDecimal("35000.00")));
             System.out.println("  [PASS] Test 8: UIUtils Button Styling");
             passed++;
         } catch (Throwable t) {

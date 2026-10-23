@@ -5,6 +5,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 /**
  * Common UI Styling and Component Helper for Hostel Management System.
@@ -25,6 +28,7 @@ public class UIUtils {
     public static final Color COLOR_WARNING = new Color(217, 119, 6);       // #D97706 Amber
     public static final Color COLOR_INFO = new Color(14, 165, 233);         // #0EA5E9 Sky
     public static final Color COLOR_BORDER = new Color(203, 213, 225);      // #CBD5E1
+    private static final Locale INDIA_LOCALE = new Locale("en", "IN");
 
     // Standard Fonts
     public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 20);
@@ -98,27 +102,48 @@ public class UIUtils {
      */
     public static void styleTable(JTable table) {
         table.setFont(FONT_REGULAR);
-        table.setRowHeight(28);
+        table.setRowHeight(34);
         table.setGridColor(new Color(226, 232, 240));
-        table.setShowGrid(true);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionBackground(new Color(219, 234, 254));
         table.setSelectionForeground(COLOR_PRIMARY);
+        table.setFillsViewportHeight(true);
 
         JTableHeader header = table.getTableHeader();
         header.setFont(FONT_BOLD);
-        header.setBackground(new Color(241, 245, 249));
-        header.setForeground(COLOR_TEXT_PRIMARY);
-        header.setPreferredSize(new Dimension(header.getWidth(), 32));
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, COLOR_BORDER));
+        header.setBackground(COLOR_HEADER);
+        header.setForeground(Color.WHITE);
+        header.setPreferredSize(new Dimension(header.getWidth(), 38));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, COLOR_PRIMARY_HOVER));
 
-        // Center align headers
         ((DefaultTableCellRenderer) header.getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
 
-        // Center align cell renderer
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         table.setDefaultRenderer(Integer.class, centerRenderer);
         table.setDefaultRenderer(Double.class, centerRenderer);
+
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable source, Object value, boolean selected,
+                                                            boolean focused, int row, int column) {
+                Component component = super.getTableCellRendererComponent(
+                    source, value, selected, focused, row, column);
+                setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(226, 232, 240)));
+                setHorizontalAlignment(value instanceof Number ? JLabel.CENTER : JLabel.LEFT);
+                setToolTipText(value == null ? null : value.toString());
+                return component;
+            }
+        };
+        table.setDefaultRenderer(Object.class, cellRenderer);
+    }
+
+    public static String formatCurrency(BigDecimal amount) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(INDIA_LOCALE);
+        formatter.setMinimumFractionDigits(2);
+        formatter.setMaximumFractionDigits(2);
+        return formatter.format(amount);
     }
 
     /**

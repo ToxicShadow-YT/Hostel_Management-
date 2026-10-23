@@ -9,6 +9,7 @@ import model.User;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -142,7 +143,7 @@ public class FeePanel extends JPanel {
         fieldsPanel.add(UIUtils.createFormLabel("Amount (₹) * :"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtAmount = new JTextField();
-        txtAmount.setToolTipText("e.g. 35000.00");
+        txtAmount.setToolTipText("Enter an amount in INR, for example ₹35,000.00");
         fieldsPanel.add(txtAmount, gbc);
 
         // Payment Date
@@ -234,6 +235,19 @@ public class FeePanel extends JPanel {
         feeTable = new JTable(tableModel);
         UIUtils.styleTable(feeTable);
         feeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        feeTable.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                           boolean focused, int row, int column) {
+                String displayValue = value instanceof BigDecimal
+                        ? UIUtils.formatCurrency((BigDecimal) value)
+                        : value == null ? "" : value.toString();
+                Component component = super.getTableCellRendererComponent(
+                        table, displayValue, selected, focused, row, column);
+                setHorizontalAlignment(SwingConstants.RIGHT);
+                return component;
+            }
+        });
 
         // Table Selection listener: populate form fields
         feeTable.getSelectionModel().addListSelectionListener(e -> {
@@ -330,7 +344,7 @@ public class FeePanel extends JPanel {
         try {
             if (feeDAO.addFee(f)) {
                 logDAO.log(currentUser, "FEE_ADD", 
-                    "Recorded fee of Rs. " + f.getAmount() + " (" + f.getPaymentStatus() + ", Mode: " + f.getPaymentMode() + ") for student " + student.getName() + " (" + student.getRollNo() + ").");
+                    "Recorded fee of " + UIUtils.formatCurrency(f.getAmount()) + " (" + f.getPaymentStatus() + ", Mode: " + f.getPaymentMode() + ") for student " + student.getName() + " (" + student.getRollNo() + ").");
                 JOptionPane.showMessageDialog(this, "Fee record created successfully! (ID: " + f.getFeeId() + ")", "Success", JOptionPane.INFORMATION_MESSAGE);
                 loadFeeData();
                 clearForm();
@@ -371,7 +385,7 @@ public class FeePanel extends JPanel {
         try {
             if (feeDAO.updateFee(f)) {
                 logDAO.log(currentUser, "FEE_UPDATE", 
-                    "Updated fee record #" + feeId + " (Amount: Rs. " + f.getAmount() + ", Status: " + f.getPaymentStatus() + ") for student " + student.getName() + ".");
+                    "Updated fee record #" + feeId + " (Amount: " + UIUtils.formatCurrency(f.getAmount()) + ", Status: " + f.getPaymentStatus() + ") for student " + student.getName() + ".");
                 JOptionPane.showMessageDialog(this, "Fee record updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
                 loadFeeData();
                 clearForm();
@@ -458,7 +472,9 @@ public class FeePanel extends JPanel {
             return null;
         }
         try {
-            BigDecimal amt = new BigDecimal(text);
+            String numericText = text.replace("₹", "").replace(",", "")
+                    .replaceAll("[\\s\\u00A0\\u202F]", "");
+            BigDecimal amt = new BigDecimal(numericText);
             if (amt.compareTo(BigDecimal.ZERO) <= 0) {
                 JOptionPane.showMessageDialog(this, "Amount must be greater than 0.", "Validation Error", JOptionPane.WARNING_MESSAGE);
                 return null;

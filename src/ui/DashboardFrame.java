@@ -145,7 +145,7 @@ public class DashboardFrame extends JFrame {
 
     private JPanel createSidebar() {
         JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setPreferredSize(new Dimension(220, 0));
+        sidebar.setPreferredSize(new Dimension(230, 0));
         sidebar.setBackground(new Color(15, 23, 42)); // Dark Slate
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(30, 41, 59)));
 
@@ -250,10 +250,14 @@ public class DashboardFrame extends JFrame {
                 entry.getValue().setBackground(UIUtils.COLOR_PRIMARY);
                 entry.getValue().setForeground(Color.WHITE);
                 entry.getValue().setFont(new Font("Segoe UI", Font.BOLD, 13));
+                entry.getValue().setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 3, 0, 0, UIUtils.COLOR_PRIMARY_HOVER),
+                        BorderFactory.createEmptyBorder(9, 11, 9, 14)));
             } else {
                 entry.getValue().setBackground(new Color(15, 23, 42));
                 entry.getValue().setForeground(new Color(203, 213, 225));
                 entry.getValue().setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                entry.getValue().setBorder(BorderFactory.createEmptyBorder(9, 14, 9, 14));
             }
         }
 
