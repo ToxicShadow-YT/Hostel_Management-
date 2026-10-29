@@ -1,29 +1,29 @@
 package ui;
 
 import model.User;
+import model.RolePermissions;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * DashboardFrame - Main Container Window for Hostel Management System.
- * Houses the sidebar navigation and CardLayout workspace.
+ * Modern, Minimalist & Elegant Application Shell for Administrators and Wardens.
  */
 public class DashboardFrame extends JFrame {
 
     private final User currentUser;
-
-    // Navigation and Cards
     private JPanel mainContentCards;
     private CardLayout cardLayout;
     private final Map<String, JButton> navButtons = new HashMap<>();
 
-    // Sub-panels
     private DashboardPanel dashboardPanel;
     private StudentPanel studentPanel;
     private RoomPanel roomPanel;
@@ -33,7 +33,6 @@ public class DashboardFrame extends JFrame {
     private ComplaintPanel complaintPanel;
     private ActivityLogPanel activityLogPanel;
 
-    // Constants for card names
     private static final String CARD_DASHBOARD = "DASHBOARD";
     private static final String CARD_STUDENTS = "STUDENTS";
     private static final String CARD_ROOMS = "ROOMS";
@@ -44,6 +43,9 @@ public class DashboardFrame extends JFrame {
     private static final String CARD_LOGS = "LOGS";
 
     public DashboardFrame(User user) {
+        if (user == null || !RolePermissions.canAccessStaffPortal(user.getRole())) {
+            throw new IllegalArgumentException("Only administrators and wardens can open the staff dashboard.");
+        }
         this.currentUser = user;
         initComponents();
     }
@@ -51,24 +53,22 @@ public class DashboardFrame extends JFrame {
     private void initComponents() {
         setTitle("Hostel Management System - " + currentUser.getFullName() + " (" + currentUser.getRole() + ")");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1220, 800);
-        setMinimumSize(new Dimension(1050, 680));
+        setSize(1360, 850);
+        setMinimumSize(new Dimension(1020, 700));
         setLocationRelativeTo(null);
+        setIconImage(createAppIcon());
         getContentPane().setBackground(UIUtils.COLOR_BG);
         setLayout(new BorderLayout());
 
-        // 1. Top Header Bar
-        add(createTopHeader(), BorderLayout.NORTH);
+        JPanel appHeader = new JPanel(new BorderLayout());
+        appHeader.add(createTopHeader(), BorderLayout.NORTH);
+        appHeader.add(createNavigationBar(), BorderLayout.SOUTH);
+        add(appHeader, BorderLayout.NORTH);
 
-        // 2. Left Sidebar Navigation
-        add(createSidebar(), BorderLayout.WEST);
-
-        // 3. Center Workspace with CardLayout
         cardLayout = new CardLayout();
         mainContentCards = new JPanel(cardLayout);
         mainContentCards.setBackground(UIUtils.COLOR_BG);
 
-        // Instantiate sub-panels passing currentUser for audit logging
         dashboardPanel = new DashboardPanel(currentUser);
         studentPanel = new StudentPanel(currentUser);
         roomPanel = new RoomPanel(currentUser);
@@ -77,7 +77,6 @@ public class DashboardFrame extends JFrame {
         visitorPanel = new VisitorPanel(currentUser);
         complaintPanel = new ComplaintPanel(currentUser);
 
-        // Add to CardLayout
         mainContentCards.add(dashboardPanel, CARD_DASHBOARD);
         mainContentCards.add(studentPanel, CARD_STUDENTS);
         mainContentCards.add(roomPanel, CARD_ROOMS);
@@ -86,233 +85,384 @@ public class DashboardFrame extends JFrame {
         mainContentCards.add(visitorPanel, CARD_VISITORS);
         mainContentCards.add(complaintPanel, CARD_COMPLAINTS);
 
-        // RBAC: Only instantiate and register ActivityLogPanel for Admin
         if (isAdmin()) {
             activityLogPanel = new ActivityLogPanel();
             mainContentCards.add(activityLogPanel, CARD_LOGS);
         }
 
         add(mainContentCards, BorderLayout.CENTER);
-
-        // Default to Dashboard
         setActiveCard(CARD_DASHBOARD);
     }
 
+    private Image createAppIcon() {
+        int size = 32;
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = img.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        GradientPaint gradient = new GradientPaint(
+                0, 0, new Color(99, 102, 241),
+                0, size, new Color(67, 56, 202)
+        );
+        g2.setPaint(gradient);
+        g2.fillRoundRect(0, 0, size, size, 10, 10);
+
+        g2.setColor(Color.WHITE);
+        g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        int cx = size / 2;
+        int cy = size / 2;
+        int[] rx = {cx - 9, cx, cx + 9};
+        int[] ry = {cy, cy - 8, cy};
+        g2.drawPolyline(rx, ry, 3);
+        g2.drawLine(cx - 7, cy, cx - 7, cy + 8);
+        g2.drawLine(cx + 7, cy, cx + 7, cy + 8);
+        g2.drawLine(cx - 7, cy + 8, cx + 7, cy + 8);
+        g2.drawRoundRect(cx - 3, cy + 2, 6, 6, 2, 2);
+
+        g2.dispose();
+        return img;
+    }
+
     private JPanel createTopHeader() {
-        JPanel header = new JPanel(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout(18, 0));
         header.setBackground(UIUtils.COLOR_HEADER);
-        header.setBorder(new EmptyBorder(12, 20, 12, 20));
+        header.setBorder(new EmptyBorder(12, 24, 12, 24));
 
         // Left Branding
-        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        brandPanel.setOpaque(false);
+        JPanel branding = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        branding.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("HOSTEL MANAGEMENT SYSTEM");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 17));
-        lblTitle.setForeground(Color.WHITE);
+        // Modern 36x36 brand badge
+        JComponent brandBadge = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int size = 36;
+                int arc = 10;
+                GradientPaint gp = new GradientPaint(0, 0, new Color(99, 102, 241), 0, size, new Color(67, 56, 202));
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, size, size, arc, arc);
 
-        JLabel lblTag = new JLabel("|  Campus Residence Portal");
-        lblTag.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblTag.setForeground(new Color(148, 163, 184));
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int cx = size / 2;
+                int cy = size / 2;
+                int[] rx = {cx - 8, cx, cx + 8};
+                int[] ry = {cy, cy - 7, cy};
+                g2.drawPolyline(rx, ry, 3);
+                g2.drawLine(cx - 6, cy, cx - 6, cy + 7);
+                g2.drawLine(cx + 6, cy, cx + 6, cy + 7);
+                g2.drawLine(cx - 6, cy + 7, cx + 6, cy + 7);
+                g2.drawRoundRect(cx - 3, cy + 2, 6, 5, 2, 2);
 
-        brandPanel.add(lblTitle);
-        brandPanel.add(lblTag);
-        header.add(brandPanel, BorderLayout.WEST);
+                g2.dispose();
+            }
+        };
+        brandBadge.setPreferredSize(new Dimension(36, 36));
+        brandBadge.setOpaque(false);
 
-        // Right User Info & Actions
-        JPanel rightInfo = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-        rightInfo.setOpaque(false);
+        JPanel titleBlock = new JPanel();
+        titleBlock.setOpaque(false);
+        titleBlock.setLayout(new BoxLayout(titleBlock, BoxLayout.Y_AXIS));
+        titleBlock.setPreferredSize(new Dimension(280, 38));
 
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMM yyyy"));
-        JLabel lblDate = new JLabel(today);
-        lblDate.setFont(UIUtils.FONT_REGULAR);
-        lblDate.setForeground(new Color(203, 213, 225));
+        JLabel title = new JLabel("Hostel Management System");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(Color.WHITE);
 
-        JLabel lblUser = new JLabel(currentUser.getFullName() + " (" + currentUser.getRole() + ")");
-        lblUser.setFont(UIUtils.FONT_BOLD);
-        lblUser.setForeground(Color.WHITE);
+        JLabel subtitle = new JLabel("Campus Administration Suite");
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        subtitle.setForeground(new Color(148, 163, 184)); // Slate 400
 
-        JButton btnLogout = UIUtils.createDangerButton("Logout");
-        btnLogout.addActionListener(e -> handleLogout());
+        titleBlock.add(title);
+        titleBlock.add(Box.createVerticalStrut(2));
+        titleBlock.add(subtitle);
 
-        rightInfo.add(lblDate);
-        rightInfo.add(lblUser);
-        rightInfo.add(btnLogout);
+        branding.add(brandBadge);
+        branding.add(titleBlock);
 
-        header.add(rightInfo, BorderLayout.EAST);
+        // Right Account Panel
+        JPanel account = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
+        account.setOpaque(false);
+
+        // Date Display
+        JLabel date = new JLabel(LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy")));
+        date.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        date.setForeground(new Color(148, 163, 184)); // Slate 400
+
+        // User Avatar Circle
+        String initial = (currentUser.getFullName() != null && !currentUser.getFullName().isEmpty())
+                ? currentUser.getFullName().substring(0, 1).toUpperCase()
+                : "U";
+
+        JComponent avatar = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int size = 32;
+                if (isAdmin()) {
+                    g2.setPaint(new GradientPaint(0, 0, new Color(139, 92, 246), 0, size, new Color(109, 40, 217)));
+                } else {
+                    g2.setPaint(new GradientPaint(0, 0, new Color(14, 165, 233), 0, size, new Color(2, 132, 199)));
+                }
+                g2.fillOval(0, 0, size, size);
+
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (size - fm.stringWidth(initial)) / 2;
+                int ty = (size - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(initial, tx, ty);
+                g2.dispose();
+            }
+        };
+        avatar.setPreferredSize(new Dimension(32, 32));
+        avatar.setOpaque(false);
+
+        // User Name & Role Pill
+        JPanel userBlock = new JPanel();
+        userBlock.setOpaque(false);
+        userBlock.setLayout(new BoxLayout(userBlock, BoxLayout.Y_AXIS));
+
+        JLabel userName = new JLabel(currentUser.getFullName());
+        userName.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        userName.setForeground(Color.WHITE);
+
+        // Role Pill Badge
+        String roleText = isAdmin() ? "ADMIN" : "WARDEN";
+        JLabel userRole = new JLabel(roleText) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+                int arc = 8;
+
+                if (isAdmin()) {
+                    g2.setColor(new Color(168, 85, 247, 45));
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+                    g2.setColor(new Color(168, 85, 247, 100));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+                } else {
+                    g2.setColor(new Color(56, 189, 248, 45));
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+                    g2.setColor(new Color(56, 189, 248, 100));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        userRole.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        userRole.setForeground(isAdmin() ? new Color(216, 180, 254) : new Color(186, 230, 253));
+        userRole.setBorder(new EmptyBorder(1, 8, 1, 8));
+        userRole.setOpaque(false);
+
+        userBlock.add(userName);
+        userBlock.add(Box.createVerticalStrut(2));
+        userBlock.add(userRole);
+
+        // Modern Ghost Logout Button
+        JButton logout = new JButton("Log out") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+
+                int w = getWidth();
+                int h = getHeight();
+                int arc = 8;
+
+                if (getModel().isRollover()) {
+                    g2.setColor(new Color(239, 68, 68, 50));
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+                    g2.setColor(new Color(239, 68, 68));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+                    g2.setColor(new Color(254, 202, 202));
+                } else {
+                    g2.setColor(new Color(255, 255, 255, 15));
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+                    g2.setColor(new Color(255, 255, 255, 40));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+                    g2.setColor(new Color(226, 232, 240));
+                }
+
+                FontMetrics fm = g2.getFontMetrics(getFont());
+                int tx = (w - fm.stringWidth(getText())) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.setFont(getFont());
+                g2.drawString(getText(), tx, ty);
+
+                g2.dispose();
+            }
+        };
+        logout.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        logout.setPreferredSize(new Dimension(80, 32));
+        logout.setFocusPainted(false);
+        logout.setBorderPainted(false);
+        logout.setContentAreaFilled(false);
+        logout.setOpaque(false);
+        logout.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logout.addActionListener(e -> handleLogout());
+
+        account.add(date);
+        account.add(avatar);
+        account.add(userBlock);
+        account.add(logout);
+
+        header.add(branding, BorderLayout.WEST);
+        header.add(account, BorderLayout.EAST);
         return header;
     }
 
-    private JPanel createSidebar() {
-        JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setPreferredSize(new Dimension(230, 0));
-        sidebar.setBackground(new Color(15, 23, 42)); // Dark Slate
-        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(30, 41, 59)));
+    private JComponent createNavigationBar() {
+        JPanel navItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
+        navItems.setBackground(UIUtils.COLOR_NAV_BG);
+        navItems.setBorder(new EmptyBorder(2, 18, 6, 18));
 
-        JPanel menuItemsPanel = new JPanel();
-        menuItemsPanel.setOpaque(false);
-        menuItemsPanel.setLayout(new BoxLayout(menuItemsPanel, BoxLayout.Y_AXIS));
-        menuItemsPanel.setBorder(new EmptyBorder(15, 10, 15, 10));
-
-        JLabel lblMenu = new JLabel("MAIN MENU");
-        lblMenu.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        lblMenu.setForeground(new Color(100, 116, 139));
-        lblMenu.setBorder(new EmptyBorder(0, 10, 10, 0));
-        lblMenu.setAlignmentX(Component.LEFT_ALIGNMENT);
-        menuItemsPanel.add(lblMenu);
-
-        // Nav Buttons
-        addNavButton(menuItemsPanel, "Dashboard", CARD_DASHBOARD);
-        addNavButton(menuItemsPanel, "Students", CARD_STUDENTS);
-        addNavButton(menuItemsPanel, "Rooms", CARD_ROOMS);
-        addNavButton(menuItemsPanel, "Room Allocation", CARD_ALLOCATIONS);
-        addNavButton(menuItemsPanel, "Fees & Payments", CARD_FEES);
-        addNavButton(menuItemsPanel, "Visitor Log", CARD_VISITORS);
-        addNavButton(menuItemsPanel, "Complaints", CARD_COMPLAINTS);
-
-        // RBAC: Activity Logs is strictly Admin-only
+        addNavButton(navItems, "Dashboard", "Dashboard", CARD_DASHBOARD);
+        addNavButton(navItems, "Students", "Students", CARD_STUDENTS);
+        addNavButton(navItems, "Rooms", "Rooms", CARD_ROOMS);
+        addNavButton(navItems, "Allocations", "Allocations", CARD_ALLOCATIONS);
+        addNavButton(navItems, "Fees & Payments", "Fees & Payments", CARD_FEES);
+        addNavButton(navItems, "Visitors", "Visitors", CARD_VISITORS);
+        addNavButton(navItems, "Complaints", "Complaints", CARD_COMPLAINTS);
         if (isAdmin()) {
-            addNavButton(menuItemsPanel, "Activity Logs", CARD_LOGS);
+            addNavButton(navItems, "Activity Logs", "Activity Logs", CARD_LOGS);
         }
 
-        sidebar.add(menuItemsPanel, BorderLayout.NORTH);
-
-        // Bottom Exit Button
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setOpaque(false);
-        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-        bottomPanel.setBorder(new EmptyBorder(10, 10, 15, 10));
-
-        JButton btnExit = new JButton("Exit System");
-        btnExit.setFont(UIUtils.FONT_BOLD);
-        btnExit.setForeground(new Color(248, 113, 113));
-        btnExit.setBackground(new Color(30, 41, 59));
-        btnExit.setFocusPainted(false);
-        btnExit.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        btnExit.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnExit.setMaximumSize(new Dimension(200, 36));
-        btnExit.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnExit.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to exit the application?",
-                    "Exit Confirmation",
-                    JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                System.exit(0);
-            }
-        });
-        bottomPanel.add(btnExit);
-
-        sidebar.add(bottomPanel, BorderLayout.SOUTH);
-        return sidebar;
+        JScrollPane navScroll = new JScrollPane(navItems,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        navScroll.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, new Color(30, 41, 59)));
+        navScroll.getViewport().setBackground(UIUtils.COLOR_NAV_BG);
+        navScroll.setPreferredSize(new Dimension(100, 48));
+        navScroll.getHorizontalScrollBar().setUnitIncrement(24);
+        return navScroll;
     }
 
-    private void addNavButton(JPanel container, String text, String cardName) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btn.setForeground(new Color(203, 213, 225));
-        btn.setBackground(new Color(15, 23, 42));
-        btn.setFocusPainted(false);
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setBorder(BorderFactory.createEmptyBorder(9, 14, 9, 14));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setMaximumSize(new Dimension(200, 38));
-        btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        btn.addActionListener(e -> setActiveCard(cardName));
-
-        // Hover Effect
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+    private void addNavButton(JPanel container, String baseName, String displayText, String cardName) {
+        JButton button = new JButton(displayText) {
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (!btn.getBackground().equals(UIUtils.COLOR_PRIMARY)) {
-                    btn.setBackground(new Color(30, 41, 59));
-                }
-            }
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (!btn.getBackground().equals(UIUtils.COLOR_PRIMARY)) {
-                    btn.setBackground(new Color(15, 23, 42));
-                }
-            }
-        });
+                int w = getWidth();
+                int h = getHeight();
+                int arc = 8;
+                boolean active = cardName.equals(getActiveCard());
 
-        navButtons.put(cardName, btn);
-        container.add(btn);
-        container.add(Box.createVerticalStrut(4));
+                if (active) {
+                    GradientPaint gp = new GradientPaint(0, 0, UIUtils.COLOR_PRIMARY, 0, h, new Color(67, 56, 202));
+                    g2.setPaint(gp);
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+
+                    g2.setColor(new Color(99, 102, 241));
+                    g2.setStroke(new BasicStroke(1.0f));
+                    g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+
+                    g2.setColor(Color.WHITE);
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(30, 41, 59));
+                    g2.fillRoundRect(0, 0, w, h, arc, arc);
+                    g2.setColor(Color.WHITE);
+                } else {
+                    g2.setColor(new Color(148, 163, 184)); // Slate 400
+                }
+
+                FontMetrics fm = g2.getFontMetrics(getFont());
+                int tx = (w - fm.stringWidth(getText())) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.setFont(getFont());
+                g2.drawString(getText(), tx, ty);
+
+                g2.dispose();
+            }
+        };
+
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(displayText.length() > 16 ? 156 : 132, 34));
+        button.addActionListener(e -> setActiveCard(cardName));
+
+        navButtons.put(cardName, button);
+        container.add(button);
+    }
+
+    private String activeCard = CARD_DASHBOARD;
+
+    private String getActiveCard() {
+        return activeCard;
     }
 
     private void setActiveCard(String cardName) {
-        // Reset all buttons style
-        for (Map.Entry<String, JButton> entry : navButtons.entrySet()) {
-            if (entry.getKey().equals(cardName)) {
-                entry.getValue().setBackground(UIUtils.COLOR_PRIMARY);
-                entry.getValue().setForeground(Color.WHITE);
-                entry.getValue().setFont(new Font("Segoe UI", Font.BOLD, 13));
-                entry.getValue().setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 3, 0, 0, UIUtils.COLOR_PRIMARY_HOVER),
-                        BorderFactory.createEmptyBorder(9, 11, 9, 14)));
-            } else {
-                entry.getValue().setBackground(new Color(15, 23, 42));
-                entry.getValue().setForeground(new Color(203, 213, 225));
-                entry.getValue().setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                entry.getValue().setBorder(BorderFactory.createEmptyBorder(9, 14, 9, 14));
-            }
+        if (CARD_LOGS.equals(cardName) && !RolePermissions.canViewActivityLogs(currentUser.getRole())) {
+            throw new SecurityException("Activity logs are available to administrators only.");
+        }
+        this.activeCard = cardName;
+        for (JButton btn : navButtons.values()) {
+            btn.repaint();
         }
 
-        // Refresh dependent data when switching screens
         switch (cardName) {
-            case CARD_DASHBOARD:
-                dashboardPanel.refreshData();
-                break;
-            case CARD_STUDENTS:
-                studentPanel.loadStudentData();
-                break;
-            case CARD_ROOMS:
-                roomPanel.loadRoomData();
-                break;
-            case CARD_ALLOCATIONS:
+            case CARD_DASHBOARD -> dashboardPanel.refreshData();
+            case CARD_STUDENTS -> studentPanel.loadStudentData();
+            case CARD_ROOMS -> roomPanel.loadRoomData();
+            case CARD_ALLOCATIONS -> {
                 allocationPanel.reloadDropdowns();
                 allocationPanel.loadAllocationData();
-                break;
-            case CARD_FEES:
+            }
+            case CARD_FEES -> {
                 feePanel.reloadStudentDropdown();
                 feePanel.loadFeeData();
-                break;
-            case CARD_VISITORS:
+            }
+            case CARD_VISITORS -> {
                 visitorPanel.reloadStudentDropdown();
                 visitorPanel.loadVisitorData();
-                break;
-            case CARD_COMPLAINTS:
+            }
+            case CARD_COMPLAINTS -> {
                 complaintPanel.reloadStudentDropdown();
                 complaintPanel.loadComplaintData();
-                break;
-            case CARD_LOGS:
+            }
+            case CARD_LOGS -> {
                 if (activityLogPanel != null) {
                     activityLogPanel.loadDropdownOptions();
                     activityLogPanel.loadLogData();
                 }
-                break;
+            }
+            default -> throw new IllegalArgumentException("Unknown application screen: " + cardName);
         }
-
         cardLayout.show(mainContentCards, cardName);
     }
 
     private boolean isAdmin() {
-        return currentUser != null && "Admin".equalsIgnoreCase(currentUser.getRole());
+        return currentUser != null && RolePermissions.canViewActivityLogs(currentUser.getRole());
     }
 
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to log out?",
+                "Are you sure you want to log out of your session?",
                 "Confirm Logout",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
-
         if (confirm == JOptionPane.YES_OPTION) {
             new LoginFrame().setVisible(true);
-            this.dispose();
+            dispose();
         }
     }
 }

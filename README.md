@@ -1,8 +1,10 @@
-# Java Hostel Management System
+# Hostel_Management-
 
 A desktop-based Hostel Management System developed using **Java Swing/AWT, JDBC, and MySQL**.
+See [requirements.md](requirements.md) for the application requirements and role permissions.
 
 The application provides a centralized system for managing hostel students, rooms, room allocations, fees, visitors, complaints, and administrative activity logs. It uses a layered structure with separate **UI, DAO, model, and database** components.
+The desktop UI uses a dark navy horizontal navigation bar, an indigo accent palette, slate workspace surfaces, and consistent card and table styling.
 
 ## Features
 
@@ -22,6 +24,8 @@ The application provides a centralized system for managing hostel students, room
 * JDBC-based database connectivity
 * Sample database records for demonstration
 * Self-test utility for basic system verification
+* Role-specific administrator, warden, and student portals
+* Students can view only their own records and submit complaints
 
 ## Technology Stack
 
@@ -73,10 +77,15 @@ The application starts with a login screen.
 
 Users are authenticated against the MySQL `users` table before accessing the management dashboard.
 
-Supported roles include:
+The three account types have separate purposes and permissions:
 
-* Administrator
-* Warden
+| Account type | Sign-in screen | What the account can do | What it cannot do |
+| --- | --- | --- | --- |
+| **Administrator** | Staff sign-in | Manage students, rooms, allocations, fees, visitors, and complaints; view activity/audit logs | — |
+| **Warden/Staff** | Staff sign-in | Manage students, rooms, allocations, fees, visitors, and complaints | Cannot view activity/audit logs |
+| **Student** | Student Portal | View only their own profile, room allocation, fees, complaints, and visitor records; submit a complaint; change their own password | Cannot open staff screens, view other students' records, edit hostel/fee/visitor records, or view audit logs |
+
+These are enforced by separate staff and student login flows, role checks on the staff dashboard, and student-data queries restricted to the authenticated student's ID. Students use the **Student? Sign in to your portal** link on the staff sign-in screen. A student account is separate from the staff `users` table. Keep enrollment phone numbers accurate and only provide them to the intended student.
 
 ### 2. Dashboard
 
@@ -230,6 +239,7 @@ The database contains the following tables:
 | --------------- | ------------------------------- |
 | `users`         | Authentication and user roles   |
 | `students`      | Student records                 |
+| `student_accounts` | Student portal credentials (PBKDF2 hashes) |
 | `rooms`         | Hostel room records             |
 | `allocations`   | Student-room allocations        |
 | `fees`          | Hostel fee/payment records      |
@@ -237,20 +247,22 @@ The database contains the following tables:
 | `complaints`    | Student complaints              |
 | `activity_logs` | Administrative activity history |
 
-The complete database structure and demonstration data are provided in:
+The schema and optional sample records are provided separately:
 
 ```text
-database.sql
+database-setup.sql       # non-destructive schema setup
+database-demo-data.sql   # repeatable sample data
+database.sql             # legacy destructive reset-and-demo script
 ```
 
 ## Requirements
 
 Before running the application, install:
 
-* Java JDK 8 or later
+* Java JDK 21 or later
 * MySQL Server
-* MySQL Workbench
-* Git
+* MySQL client (Workbench is optional)
+* Git (optional, for cloning the project)
 
 The project includes MySQL Connector/J:
 
@@ -264,38 +276,45 @@ lib/mysql-connector-j-8.3.0.jar
 
 Make sure your MySQL server is running.
 
-### 2. Open MySQL Workbench
+### 2. Create the schema
 
-Open:
-
-```text
-database.sql
-```
-
-### 3. Execute the script
-
-The script creates:
+For a new database or to add any missing tables without deleting existing data, open and execute:
 
 ```text
-hostel_management
+database-setup.sql
 ```
 
-and all required tables and demonstration records.
+This creates the nine application tables if needed and adds the demo staff login accounts only if those usernames do not already exist. It does not insert sample student/fee/visitor records.
+
+`database.sql` is a legacy demo-data/reset script. It **drops and recreates the application tables**, so only run it when you intend to erase and replace their contents.
+
+### 3. Add demo data
+
+Execute:
+
+```text
+database-demo-data.sql
+```
+
+This repeatable seed script adds the sample students, rooms, allocations, fees, visitors, complaints, and activity logs only when missing. It updates room occupancy to match active allocations and does not drop tables or replace existing user records.
+
+`database.sql` is a legacy full reset-and-demo script that drops and recreates tables. Use it only when you intentionally want to erase and replace the database contents.
 
 ### 4. Verify the database
 
-In MySQL Workbench:
+In MySQL Workbench or a MySQL command-line client:
 
 ```sql
 USE hostel_management;
 SHOW TABLES;
 ```
 
-You should see:
+You should see these nine tables:
 
 ```text
 users
 students
+student_accounts
 rooms
 allocations
 fees
@@ -328,16 +347,7 @@ db.user=root
 db.password=YOUR_MYSQL_PASSWORD
 ```
 
-Replace:
-
-```text
-YOUR_MYSQL_PASSWORD
-```
-
-Also replace DbConnection.java code with your local MySQL password:
-```text
-private static String password = "[PASSWORD]";// replace with your password
-```
+Set `db.user` and `db.password` to your local MySQL credentials. Keep them only in the untracked `db.properties` file; do not put credentials in source files. The application uses the database account configured here, not the demo `admin` login.
 
 
 ### Important
@@ -401,7 +411,7 @@ On Windows, use `;` instead of `:` in the classpath.
 
 ## Default Login Credentials
 
-The database script contains demonstration accounts.
+After running the database setup and demo-data scripts, use one of these local demonstration logins:
 
 ### Administrator
 
@@ -417,9 +427,23 @@ Username: warden
 Password: warden123
 ```
 
-These credentials are intended for local demonstration purposes.
+### Student
 
-For production use, passwords should be securely hashed and managed using a stronger authentication system.
+On the staff sign-in screen, choose **Student? Sign in to your portal**, then enter:
+
+```text
+Roll number: CS202401
+Password: Student@123
+```
+
+The demo student account opens the restricted student portal, not the staff dashboard. Change the demo password after signing in.
+
+These demonstration credentials are for local use only. The administrator and warden authenticate from the staff sign-in screen; students must use the separate Student Portal sign-in screen.
+
+The login screen does not prefill or display these credentials. Change the demonstration passwords before using the database outside a local demo environment.
+On successful sign-in, legacy plaintext account passwords are upgraded in place to salted PBKDF2 hashes. No schema migration is required, and users can continue to sign in with their existing password during the upgrade.
+
+Other enrolled students without an account can choose **Create account** in the Student Portal and verify their roll number and phone number on file. Each student account can be activated once. Student passwords must be at least eight characters and can be changed from the portal. The demo-data seeder does not replace an existing student's password.
 
 ## Project Structure
 
@@ -431,6 +455,7 @@ Java-Hostel-Management-System/
 │   │   └── DBConnection.java
 │   │
 │   ├── model/
+│   │   ├── RolePermissions.java
 │   │   ├── User.java
 │   │   ├── Student.java
 │   │   ├── Room.java
@@ -441,6 +466,8 @@ Java-Hostel-Management-System/
 │   │   └── ActivityLog.java
 │   │
 │   ├── dao/
+│   │   ├── StudentAccountDAO.java
+│   │   ├── StudentPortalDAO.java
 │   │   ├── UserDAO.java
 │   │   ├── StudentDAO.java
 │   │   ├── RoomDAO.java
@@ -452,6 +479,8 @@ Java-Hostel-Management-System/
 │   │   └── DashboardDAO.java
 │   │
 │   ├── ui/
+│   │   ├── StudentLoginFrame.java
+│   │   ├── StudentPortalFrame.java
 │   │   ├── LoginFrame.java
 │   │   ├── DashboardFrame.java
 │   │   ├── DashboardPanel.java
@@ -465,6 +494,8 @@ Java-Hostel-Management-System/
 │   │   └── UIUtils.java
 │   │
 │   ├── test/
+│   │   ├── DatabaseIntegrationTest.java
+│   │   ├── ScreenshotGenerator.java
 │   │   └── SystemSelfTest.java
 │   │
 │   └── Main.java
@@ -484,28 +515,32 @@ Java-Hostel-Management-System/
 
 ## Testing
 
-The project includes a basic system self-test:
+The project includes a self-test suite and a database integration test. From Windows PowerShell, run:
 
-```text
-src/test/SystemSelfTest.java
+```powershell
+javac --release 21 -encoding UTF-8 -cp "lib/*;src" -d bin src\database\*.java src\model\*.java src\dao\*.java src\ui\*.java src\Main.java src\test\*.java
+java "-Djava.awt.headless=true" -ea -cp "bin;lib/*" test.SystemSelfTest
+java -ea -cp "bin;lib/*" test.DatabaseIntegrationTest
 ```
 
-The application was designed to verify important operations such as:
+`DatabaseIntegrationTest` requires a running MySQL server, a configured `db.properties`, and the demo records. It creates uniquely named temporary records, checks CRUD and allocation/occupancy workflows for all modules, and cleans up after itself.
 
-* Database connectivity
-* Authentication
-* Student operations
-* Room operations
-* Allocation operations
-* Fee operations
-* Visitor operations
-* Complaint operations
-* Activity logging
+Regenerate the current application screenshots on a desktop session with MySQL available:
+
+```powershell
+java -cp "bin;lib/*" test.ScreenshotGenerator
+```
 
 ## Screenshots
 
 ### Login
 ![Login](docs/screenshots/login.png)
+
+### Student Sign In
+![Student Sign In](docs/screenshots/student-login.png)
+
+### Student Portal
+![Student Portal](docs/screenshots/student-portal.png)
 
 ### Dashboard
 ![Dashboard](docs/screenshots/dashboard.png)
@@ -531,9 +566,6 @@ The application was designed to verify important operations such as:
 ### Activity Logs
 ![Activity Logs](docs/screenshots/activity-logs.png)
 
-### MySQL Database
-![Database](docs/screenshots/database.png)
-
 ## Project Goals
 
 This project was developed to demonstrate practical implementation of:
@@ -554,8 +586,8 @@ This project was developed to demonstrate practical implementation of:
 
 Possible improvements include:
 
-* Secure password hashing
 * More granular role-based permissions
+* Password reset and account recovery
 * Online fee payment
 * Email/SMS notifications
 * Student self-service portal

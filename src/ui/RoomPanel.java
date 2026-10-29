@@ -49,7 +49,6 @@ public class RoomPanel extends JPanel {
         this.roomDAO = new RoomDAO();
         this.logDAO = new ActivityLogDAO();
         initComponents();
-        loadRoomData();
     }
 
     public RoomPanel() {
@@ -64,7 +63,7 @@ public class RoomPanel extends JPanel {
         // Top Title
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
-        headerPanel.add(UIUtils.createHeaderLabel("Hostel Room Management"), BorderLayout.WEST);
+        headerPanel.add(UIUtils.createPageHeader("Hostel Room & Bed Inventory", "Configure room capacities, floor plans, AC/Non-AC types, and maintenance states"), BorderLayout.WEST);
         add(headerPanel, BorderLayout.NORTH);
 
         // Center Split: Left = Form, Right = Table + Search
@@ -162,7 +161,11 @@ public class RoomPanel extends JPanel {
         cmbStatus = new JComboBox<>(new String[]{"Available", "Full", "Maintenance"});
         fieldsPanel.add(cmbStatus, gbc);
 
-        formCard.add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        JScrollPane scrollFields = new JScrollPane(fieldsPanel);
+        scrollFields.setBorder(null);
+        scrollFields.setOpaque(false);
+        scrollFields.getViewport().setOpaque(false);
+        formCard.add(scrollFields, BorderLayout.CENTER);
 
         // Buttons
         JPanel actionBtnPanel = new JPanel(new GridLayout(2, 2, 8, 8));
@@ -259,21 +262,23 @@ public class RoomPanel extends JPanel {
      * Loads room data from MySQL.
      */
     public void loadRoomData() {
-        tableModel.setRowCount(0);
-        List<Room> rooms = roomDAO.getAllRooms();
-        for (Room r : rooms) {
-            tableModel.addRow(new Object[]{
-                r.getRoomId(),
-                r.getRoomNumber(),
-                r.getBlock(),
-                r.getFloor(),
-                r.getRoomType(),
-                r.getCapacity(),
-                r.getOccupied(),
-                r.getAvailableCapacity(),
-                r.getStatus()
-            });
-        }
+        UIUtils.loadInBackground(this, "rooms", "load rooms",
+                roomDAO::getAllRooms, rooms -> {
+                    tableModel.setRowCount(0);
+                    for (Room r : rooms) {
+                        tableModel.addRow(new Object[]{
+                            r.getRoomId(),
+                            r.getRoomNumber(),
+                            r.getBlock(),
+                            r.getFloor(),
+                            r.getRoomType(),
+                            r.getCapacity(),
+                            r.getOccupied(),
+                            r.getAvailableCapacity(),
+                            r.getStatus()
+                        });
+                    }
+                });
     }
 
     private void handleAddRoom() {

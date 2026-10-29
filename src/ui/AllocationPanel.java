@@ -16,6 +16,7 @@ import java.awt.*;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.AbstractMap;
 import java.util.List;
 
 /**
@@ -104,8 +105,6 @@ public class AllocationPanel extends JPanel {
         this.logDAO = new ActivityLogDAO();
 
         initComponents();
-        reloadDropdowns();
-        loadAllocationData();
     }
 
     public AllocationPanel() {
@@ -340,38 +339,42 @@ public class AllocationPanel extends JPanel {
      * into dropdowns.
      */
     public void reloadDropdowns() {
-        // Students without active allocations
-        cmbStudents.removeAllItems();
-        List<Student> availableStudents = studentDAO.getStudentsWithoutActiveAllocation();
-        for (Student s : availableStudents) {
-            cmbStudents.addItem(new StudentItem(s.getStudentId(), s.getRollNo(), s.getName()));
-        }
-
-        // Rooms with remaining capacity
-        cmbRooms.removeAllItems();
-        List<Room> availableRooms = roomDAO.getAvailableRooms();
-        for (Room r : availableRooms) {
-            cmbRooms.addItem(new RoomItem(r.getRoomId(), r.getRoomNumber(), r.getRoomType(), r.getAvailableCapacity()));
-        }
+        UIUtils.loadInBackground(this, "allocation-options", "load allocation options", () -> {
+            return new AbstractMap.SimpleImmutableEntry<>(
+                    studentDAO.getStudentsWithoutActiveAllocation(),
+                    roomDAO.getAvailableRooms()
+            );
+        }, options -> {
+            cmbStudents.removeAllItems();
+            for (Student s : options.getKey()) {
+                cmbStudents.addItem(new StudentItem(s.getStudentId(), s.getRollNo(), s.getName()));
+            }
+            cmbRooms.removeAllItems();
+            for (Room r : options.getValue()) {
+                cmbRooms.addItem(new RoomItem(r.getRoomId(), r.getRoomNumber(), r.getRoomType(), r.getAvailableCapacity()));
+            }
+        });
     }
 
     /**
      * Loads allocations table from MySQL.
      */
     public void loadAllocationData() {
-        tableModel.setRowCount(0);
-        List<Allocation> list = allocationDAO.getAllAllocations();
-        for (Allocation a : list) {
-            tableModel.addRow(new Object[] {
-                    a.getAllocationId(),
-                    a.getStudentRollNo(),
-                    a.getStudentName(),
-                    a.getRoomNumber(),
-                    a.getAllocationDate(),
-                    a.getVacateDate() != null ? a.getVacateDate() : "-",
-                    a.getStatus()
-            });
-        }
+        UIUtils.loadInBackground(this, "allocations", "load allocations",
+                allocationDAO::getAllAllocations, list -> {
+                    tableModel.setRowCount(0);
+                    for (Allocation a : list) {
+                        tableModel.addRow(new Object[] {
+                                a.getAllocationId(),
+                                a.getStudentRollNo(),
+                                a.getStudentName(),
+                                a.getRoomNumber(),
+                                a.getAllocationDate(),
+                                a.getVacateDate() != null ? a.getVacateDate() : "-",
+                                a.getStatus()
+                        });
+                    }
+                });
     }
 
     private void filterTableByStatus() {

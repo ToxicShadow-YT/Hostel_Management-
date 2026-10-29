@@ -10,6 +10,7 @@ USE hostel_management;
 
 -- 2. Drop existing tables if re-running (in dependency order)
 DROP TABLE IF EXISTS activity_logs;
+DROP TABLE IF EXISTS student_accounts;
 DROP TABLE IF EXISTS complaints;
 DROP TABLE IF EXISTS visitors;
 DROP TABLE IF EXISTS fees;
@@ -40,6 +41,15 @@ CREATE TABLE students (
     year VARCHAR(20) NOT NULL,
     address VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Student Portal Credentials
+CREATE TABLE student_accounts (
+    student_id INT PRIMARY KEY,
+    password VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_student_account_student FOREIGN KEY (student_id)
+        REFERENCES students(student_id) ON DELETE CASCADE
 );
 
 -- 5. Create Rooms Table
@@ -129,6 +139,13 @@ INSERT INTO students (roll_no, name, gender, phone, email, course, year, address
 ('ME202404', 'Aditya Verma', 'Male', '9988776655', 'aditya.v@example.com', 'Diploma in Mechanical Engg', '1st Year', '23 Model Town, Nagpur'),
 ('EE202405', 'Sneha Deshmukh', 'Female', '9123456780', 'sneha.d@example.com', 'Diploma in Electrical Engg', '2nd Year', '104 Deccan Gymkhana, Pune'),
 ('CE202406', 'Kunal Joshi', 'Male', '9345678123', 'kunal.j@example.com', 'Diploma in Civil Engg', '1st Year', '56 MG Road, Kolhapur');
+
+-- Demo student sign-in: CS202401 / Student@123 (change after first sign-in).
+INSERT INTO student_accounts (student_id, password)
+SELECT student_id,
+       'pbkdf2-sha256$210000$L1UiC9vIiIAL+P9/nwVw5Q==$ZZzY4r9BLJy43Eog3oITrI4NKypI45SvIxoejhJlFYA='
+FROM students
+WHERE roll_no = 'CS202401';
 
 -- Sample Rooms
 -- Room 101: Double room with 2 active students -> Full

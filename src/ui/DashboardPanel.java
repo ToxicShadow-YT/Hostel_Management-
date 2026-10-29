@@ -17,9 +17,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * DashboardPanel - Overview & Live System Statistics.
+ * Modern, Minimalist & Elegant Overview & Live System Statistics Panel.
  */
 public class DashboardPanel extends JPanel {
+
+    private static class DashboardData {
+        private final Map<String, Integer> stats;
+        private final List<Allocation> allocations;
+        private final List<Complaint> complaints;
+
+        private DashboardData(Map<String, Integer> stats, List<Allocation> allocations,
+                              List<Complaint> complaints) {
+            this.stats = stats;
+            this.allocations = allocations;
+            this.complaints = complaints;
+        }
+    }
 
     private final DashboardDAO dashboardDAO;
     private final AllocationDAO allocationDAO;
@@ -43,13 +56,12 @@ public class DashboardPanel extends JPanel {
         this.complaintDAO = new ComplaintDAO();
 
         initComponents();
-        refreshData();
     }
 
     private void initComponents() {
         setLayout(new BorderLayout(18, 18));
         setBackground(UIUtils.COLOR_BG);
-        setBorder(new EmptyBorder(22, 24, 22, 24));
+        setBorder(new EmptyBorder(20, 24, 20, 24));
 
         // Dashboard heading and refresh action
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -60,14 +72,17 @@ public class DashboardPanel extends JPanel {
         heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
 
         JLabel lblWelcome = new JLabel("Welcome back, " + currentUser.getFullName());
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        lblWelcome.setForeground(UIUtils.COLOR_HEADER);
-        JLabel lblSubtitle = new JLabel("Your hostel at a glance  ·  " +
+        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblWelcome.setForeground(UIUtils.COLOR_TEXT_PRIMARY);
+
+        String roleBadge = "Admin".equalsIgnoreCase(currentUser.getRole()) ? "Administrator" : "Staff Warden";
+        JLabel lblSubtitle = new JLabel(roleBadge + " Portal  •  Live campus residence metrics  •  " +
                 LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")));
-        lblSubtitle.setFont(UIUtils.FONT_REGULAR);
+        lblSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblSubtitle.setForeground(UIUtils.COLOR_TEXT_MUTED);
+
         heading.add(lblWelcome);
-        heading.add(Box.createVerticalStrut(5));
+        heading.add(Box.createVerticalStrut(4));
         heading.add(lblSubtitle);
 
         JButton btnRefresh = UIUtils.createPrimaryButton("Refresh Stats");
@@ -82,37 +97,38 @@ public class DashboardPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout(0, 18));
         centerPanel.setOpaque(false);
 
-        // 6 Statistics Cards in a 2x3 or 1x6 grid
+        // 6 Statistics Cards in a 2x3 grid
         JPanel statsGrid = new JPanel(new GridLayout(2, 3, 16, 16));
         statsGrid.setOpaque(false);
 
         // Create labels for card values
-        lblTotalStudentsVal = new JLabel("0", SwingConstants.CENTER);
-        lblTotalRoomsVal = new JLabel("0", SwingConstants.CENTER);
-        lblOccupiedRoomsVal = new JLabel("0", SwingConstants.CENTER);
-        lblAvailableRoomsVal = new JLabel("0", SwingConstants.CENTER);
-        lblPendingFeesVal = new JLabel("0", SwingConstants.CENTER);
-        lblPendingComplaintsVal = new JLabel("0", SwingConstants.CENTER);
+        lblTotalStudentsVal = new JLabel("0", SwingConstants.LEFT);
+        lblTotalRoomsVal = new JLabel("0", SwingConstants.LEFT);
+        lblOccupiedRoomsVal = new JLabel("0", SwingConstants.LEFT);
+        lblAvailableRoomsVal = new JLabel("0", SwingConstants.LEFT);
+        lblPendingFeesVal = new JLabel("0", SwingConstants.LEFT);
+        lblPendingComplaintsVal = new JLabel("0", SwingConstants.LEFT);
 
-        statsGrid.add(createStatCard("Total Students", lblTotalStudentsVal, UIUtils.COLOR_PRIMARY, ""));
-        statsGrid.add(createStatCard("Total Rooms", lblTotalRoomsVal, new Color(79, 70, 229), ""));
-        statsGrid.add(createStatCard("Occupied Rooms", lblOccupiedRoomsVal, UIUtils.COLOR_WARNING, ""));
-        statsGrid.add(createStatCard("Available Rooms", lblAvailableRoomsVal, UIUtils.COLOR_SUCCESS, ""));
-        statsGrid.add(createStatCard("Pending Fee Payments", lblPendingFeesVal, UIUtils.COLOR_DANGER, ""));
-        statsGrid.add(createStatCard("Pending Complaints", lblPendingComplaintsVal, new Color(225, 29, 72), ""));
+        statsGrid.add(createStatCard("Total Students", lblTotalStudentsVal, UIUtils.COLOR_PRIMARY));
+        statsGrid.add(createStatCard("Total Rooms", lblTotalRoomsVal, new Color(99, 102, 241)));
+        statsGrid.add(createStatCard("Occupied Rooms", lblOccupiedRoomsVal, UIUtils.COLOR_WARNING));
+        statsGrid.add(createStatCard("Available Rooms", lblAvailableRoomsVal, UIUtils.COLOR_SUCCESS));
+        statsGrid.add(createStatCard("Pending Fee Payments", lblPendingFeesVal, UIUtils.COLOR_DANGER));
+        statsGrid.add(createStatCard("Pending Complaints", lblPendingComplaintsVal, new Color(225, 29, 72)));
 
         centerPanel.add(statsGrid, BorderLayout.NORTH);
 
         // Bottom split: Recent Active Allocations + Recent Pending Complaints
-        JPanel tablesPanel = new JPanel(new GridLayout(1, 2, 15, 0));
+        JPanel tablesPanel = new JPanel(new GridLayout(1, 2, 16, 0));
         tablesPanel.setOpaque(false);
 
         // Recent Allocations
         JPanel allocCard = UIUtils.createCardPanel();
-        allocCard.setLayout(new BorderLayout(5, 8));
+        allocCard.setLayout(new BorderLayout(5, 10));
+
         JLabel lblAllocHeader = new JLabel("Recent Active Allocations");
         lblAllocHeader.setFont(UIUtils.FONT_SUBTITLE);
-        lblAllocHeader.setForeground(UIUtils.COLOR_PRIMARY);
+        lblAllocHeader.setForeground(UIUtils.COLOR_TEXT_PRIMARY);
         allocCard.add(lblAllocHeader, BorderLayout.NORTH);
 
         String[] allocCols = { "Roll No", "Student Name", "Room", "Date" };
@@ -130,10 +146,11 @@ public class DashboardPanel extends JPanel {
 
         // Recent Complaints
         JPanel compCard = UIUtils.createCardPanel();
-        compCard.setLayout(new BorderLayout(5, 8));
-        JLabel lblCompHeader = new JLabel("Pending / In-Progress Complaints");
+        compCard.setLayout(new BorderLayout(5, 10));
+
+        JLabel lblCompHeader = new JLabel("Pending & In-Progress Complaints");
         lblCompHeader.setFont(UIUtils.FONT_SUBTITLE);
-        lblCompHeader.setForeground(UIUtils.COLOR_PRIMARY);
+        lblCompHeader.setForeground(UIUtils.COLOR_TEXT_PRIMARY);
         compCard.add(lblCompHeader, BorderLayout.NORTH);
 
         String[] compCols = { "Student", "Category", "Description", "Status" };
@@ -156,25 +173,49 @@ public class DashboardPanel extends JPanel {
         add(centerPanel, BorderLayout.CENTER);
     }
 
-    private JPanel createStatCard(String title, JLabel valueLabel, Color accentColor, String icon) {
-        JPanel card = UIUtils.createCardPanel();
-        card.setLayout(new BorderLayout(10, 5));
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 5, 0, 0, accentColor),
-                BorderFactory.createEmptyBorder(12, 15, 12, 15)));
+    private JPanel createStatCard(String title, JLabel valueLabel, Color accentColor) {
+        JPanel card = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth();
+                int h = getHeight();
+                int arc = 12;
 
-        JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 4));
+                g2.setColor(Color.WHITE);
+                g2.fillRoundRect(0, 0, w - 1, h - 1, arc, arc);
+
+                g2.setColor(UIUtils.COLOR_BORDER);
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, arc, arc);
+
+                // Top accent strip
+                g2.setColor(accentColor);
+                g2.fillRoundRect(0, 0, w - 1, 4, 4, 4);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        card.setOpaque(false);
+        card.setLayout(new BorderLayout(12, 6));
+        card.setBorder(new EmptyBorder(14, 18, 14, 18));
+
+        JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
 
-        JLabel lblTitle = new JLabel(icon + "  " + title);
-        lblTitle.setFont(UIUtils.FONT_REGULAR);
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblTitle.setForeground(UIUtils.COLOR_TEXT_MUTED);
 
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         valueLabel.setForeground(accentColor);
-        valueLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         textPanel.add(lblTitle);
+        textPanel.add(Box.createVerticalStrut(4));
         textPanel.add(valueLabel);
 
         card.add(textPanel, BorderLayout.CENTER);
@@ -185,45 +226,45 @@ public class DashboardPanel extends JPanel {
      * Refreshes stats and table previews from MySQL.
      */
     public void refreshData() {
-        // Query live statistics from MySQL
-        Map<String, Integer> stats = dashboardDAO.getDashboardStats();
-        lblTotalStudentsVal.setText(String.valueOf(stats.getOrDefault("totalStudents", 0)));
-        lblTotalRoomsVal.setText(String.valueOf(stats.getOrDefault("totalRooms", 0)));
-        lblOccupiedRoomsVal.setText(String.valueOf(stats.getOrDefault("occupiedRooms", 0)));
-        lblAvailableRoomsVal.setText(String.valueOf(stats.getOrDefault("availableRooms", 0)));
-        lblPendingFeesVal.setText(String.valueOf(stats.getOrDefault("pendingFees", 0)));
-        lblPendingComplaintsVal.setText(String.valueOf(stats.getOrDefault("pendingComplaints", 0)));
+        UIUtils.loadInBackground(this, "dashboard", "load dashboard data", () ->
+                new DashboardData(
+                        dashboardDAO.getDashboardStats(),
+                        allocationDAO.getActiveAllocations(),
+                        complaintDAO.getAllComplaints()), data -> {
+                    Map<String, Integer> stats = data.stats;
+                    lblTotalStudentsVal.setText(String.valueOf(stats.getOrDefault("totalStudents", 0)));
+                    lblTotalRoomsVal.setText(String.valueOf(stats.getOrDefault("totalRooms", 0)));
+                    lblOccupiedRoomsVal.setText(String.valueOf(stats.getOrDefault("occupiedRooms", 0)));
+                    lblAvailableRoomsVal.setText(String.valueOf(stats.getOrDefault("availableRooms", 0)));
+                    lblPendingFeesVal.setText(String.valueOf(stats.getOrDefault("pendingFees", 0)));
+                    lblPendingComplaintsVal.setText(String.valueOf(stats.getOrDefault("pendingComplaints", 0)));
 
-        // Load active allocations preview
-        allocationsTableModel.setRowCount(0);
-        List<Allocation> activeAllocs = allocationDAO.getActiveAllocations();
-        int count = 0;
-        for (Allocation a : activeAllocs) {
-            allocationsTableModel.addRow(new Object[] {
-                    a.getStudentRollNo(),
-                    a.getStudentName(),
-                    a.getRoomNumber(),
-                    a.getAllocationDate()
-            });
-            if (++count >= 10)
-                break; // preview top 10
-        }
+                    allocationsTableModel.setRowCount(0);
+                    for (int i = 0; i < Math.min(10, data.allocations.size()); i++) {
+                        Allocation allocation = data.allocations.get(i);
+                        allocationsTableModel.addRow(new Object[] {
+                                allocation.getStudentRollNo(),
+                                allocation.getStudentName(),
+                                allocation.getRoomNumber(),
+                                allocation.getAllocationDate()
+                        });
+                    }
 
-        // Load complaints preview
-        complaintsTableModel.setRowCount(0);
-        List<Complaint> complaints = complaintDAO.getAllComplaints();
-        count = 0;
-        for (Complaint c : complaints) {
-            if (!"Resolved".equalsIgnoreCase(c.getStatus())) {
-                complaintsTableModel.addRow(new Object[] {
-                        c.getStudentName(),
-                        c.getComplaintType(),
-                        c.getDescription(),
-                        c.getStatus()
+                    complaintsTableModel.setRowCount(0);
+                    int count = 0;
+                    for (Complaint complaint : data.complaints) {
+                        if (!"Resolved".equalsIgnoreCase(complaint.getStatus())) {
+                            complaintsTableModel.addRow(new Object[] {
+                                    complaint.getStudentName(),
+                                    complaint.getComplaintType(),
+                                    complaint.getDescription(),
+                                    complaint.getStatus()
+                            });
+                            if (++count >= 10) {
+                                break;
+                            }
+                        }
+                    }
                 });
-                if (++count >= 10)
-                    break;
-            }
-        }
     }
 }

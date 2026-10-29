@@ -50,7 +50,6 @@ public class StudentPanel extends JPanel {
         this.studentDAO = new StudentDAO();
         this.logDAO = new ActivityLogDAO();
         initComponents();
-        loadStudentData();
     }
 
     public StudentPanel() {
@@ -65,7 +64,7 @@ public class StudentPanel extends JPanel {
         // Top Title
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
-        headerPanel.add(UIUtils.createHeaderLabel("Student Management"), BorderLayout.WEST);
+        headerPanel.add(UIUtils.createPageHeader("Student Directory & Admissions", "Manage resident profiles, enrollments, and student contact records"), BorderLayout.WEST);
         add(headerPanel, BorderLayout.NORTH);
 
         // Center Split: Left = Form, Right = Table + Search
@@ -79,9 +78,9 @@ public class StudentPanel extends JPanel {
         JPanel formCard = UIUtils.createCardPanel();
         formCard.setLayout(new BorderLayout(0, 10));
 
-        JLabel lblFormTitle = new JLabel("Student Information Form");
+        JLabel lblFormTitle = new JLabel("Student Profile Details");
         lblFormTitle.setFont(UIUtils.FONT_SUBTITLE);
-        lblFormTitle.setForeground(UIUtils.COLOR_PRIMARY);
+        lblFormTitle.setForeground(UIUtils.COLOR_TEXT_PRIMARY);
         formCard.add(lblFormTitle, BorderLayout.NORTH);
 
         JPanel fieldsPanel = new JPanel(new GridBagLayout());
@@ -94,7 +93,7 @@ public class StudentPanel extends JPanel {
 
         // Student ID (Auto/Readonly)
         gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35;
-        fieldsPanel.add(UIUtils.createFormLabel("Student ID:"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Student ID"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 0.65;
         txtStudentId = new JTextField();
         txtStudentId.setEditable(false);
@@ -104,42 +103,42 @@ public class StudentPanel extends JPanel {
 
         // Roll Number
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Roll Number * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Roll Number *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtRollNo = new JTextField();
         fieldsPanel.add(txtRollNo, gbc);
 
         // Name
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Full Name * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Full Name *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtName = new JTextField();
         fieldsPanel.add(txtName, gbc);
 
         // Gender
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Gender * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Gender *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         cmbGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
         fieldsPanel.add(cmbGender, gbc);
 
         // Phone
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Phone (10 Digits) * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Phone Number *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtPhone = new JTextField();
         fieldsPanel.add(txtPhone, gbc);
 
         // Email
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Email Address * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Email Address *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtEmail = new JTextField();
         fieldsPanel.add(txtEmail, gbc);
 
         // Course
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Course * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Course *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         cmbCourse = new JComboBox<>(new String[]{
             "Diploma in Computer Engg",
@@ -154,14 +153,14 @@ public class StudentPanel extends JPanel {
 
         // Year
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Academic Year * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Academic Year *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         cmbYear = new JComboBox<>(new String[]{"1st Year", "2nd Year", "3rd Year"});
         fieldsPanel.add(cmbYear, gbc);
 
         // Address
         gbc.gridx = 0; gbc.gridy = row;
-        fieldsPanel.add(UIUtils.createFormLabel("Address * :"), gbc);
+        fieldsPanel.add(UIUtils.createFormLabel("Address *"), gbc);
         gbc.gridx = 1; gbc.gridy = row++;
         txtAddress = new JTextArea(3, 15);
         txtAddress.setLineWrap(true);
@@ -170,7 +169,11 @@ public class StudentPanel extends JPanel {
         JScrollPane scrollAddress = new JScrollPane(txtAddress);
         fieldsPanel.add(scrollAddress, gbc);
 
-        formCard.add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        JScrollPane scrollFields = new JScrollPane(fieldsPanel);
+        scrollFields.setBorder(null);
+        scrollFields.setOpaque(false);
+        scrollFields.getViewport().setOpaque(false);
+        formCard.add(scrollFields, BorderLayout.CENTER);
 
         // Form Buttons
         JPanel actionBtnPanel = new JPanel(new GridLayout(2, 2, 8, 8));
@@ -178,7 +181,7 @@ public class StudentPanel extends JPanel {
         actionBtnPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         btnAdd = UIUtils.createPrimaryButton("Add Student");
-        btnUpdate = UIUtils.createSuccessButton("Update");
+        btnUpdate = UIUtils.createSuccessButton("Update Record");
         btnDelete = UIUtils.createDangerButton("Delete");
         btnClear = UIUtils.createSecondaryButton("Clear Form");
 
@@ -199,7 +202,7 @@ public class StudentPanel extends JPanel {
         searchBar.setOpaque(false);
         searchBar.setBorder(new EmptyBorder(0, 0, 8, 0));
 
-        JLabel lblSearch = new JLabel("Search Students: ");
+        JLabel lblSearch = new JLabel("Search: ");
         lblSearch.setFont(UIUtils.FONT_BOLD);
         searchBar.add(lblSearch, BorderLayout.WEST);
 
@@ -210,7 +213,7 @@ public class StudentPanel extends JPanel {
         JPanel searchBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         searchBtns.setOpaque(false);
         btnSearch = UIUtils.createPrimaryButton("Search");
-        btnResetSearch = UIUtils.createSecondaryButton("Reset");
+        btnResetSearch = UIUtils.createSecondaryButton("Clear");
         searchBtns.add(btnSearch);
         searchBtns.add(btnResetSearch);
         searchBar.add(searchBtns, BorderLayout.EAST);
@@ -268,21 +271,23 @@ public class StudentPanel extends JPanel {
      * Loads all students from MySQL into the JTable.
      */
     public void loadStudentData() {
-        tableModel.setRowCount(0);
-        List<Student> students = studentDAO.getAllStudents();
-        for (Student s : students) {
-            tableModel.addRow(new Object[]{
-                s.getStudentId(),
-                s.getRollNo(),
-                s.getName(),
-                s.getGender(),
-                s.getPhone(),
-                s.getEmail(),
-                s.getCourse(),
-                s.getYear(),
-                s.getAddress()
-            });
-        }
+        UIUtils.loadInBackground(this, "students", "load students",
+                studentDAO::getAllStudents, students -> {
+                    tableModel.setRowCount(0);
+                    for (Student s : students) {
+                        tableModel.addRow(new Object[]{
+                            s.getStudentId(),
+                            s.getRollNo(),
+                            s.getName(),
+                            s.getGender(),
+                            s.getPhone(),
+                            s.getEmail(),
+                            s.getCourse(),
+                            s.getYear(),
+                            s.getAddress()
+                        });
+                    }
+                });
     }
 
     private void handleAddStudent() {

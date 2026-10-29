@@ -76,8 +76,6 @@ public class ComplaintPanel extends JPanel {
         this.logDAO = new ActivityLogDAO();
 
         initComponents();
-        reloadStudentDropdown();
-        loadComplaintData();
     }
 
     public ComplaintPanel() {
@@ -176,7 +174,11 @@ public class ComplaintPanel extends JPanel {
         cmbStatus = new JComboBox<>(new String[]{"Pending", "In Progress", "Resolved"});
         fieldsPanel.add(cmbStatus, gbc);
 
-        formCard.add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        JScrollPane scrollFields = new JScrollPane(fieldsPanel);
+        scrollFields.setBorder(null);
+        scrollFields.setOpaque(false);
+        scrollFields.getViewport().setOpaque(false);
+        formCard.add(scrollFields, BorderLayout.CENTER);
 
         // Form Buttons
         JPanel actionBtnPanel = new JPanel(new GridLayout(2, 2, 8, 8));
@@ -273,11 +275,13 @@ public class ComplaintPanel extends JPanel {
     }
 
     public void reloadStudentDropdown() {
-        cmbStudents.removeAllItems();
-        List<Student> students = studentDAO.getAllStudents();
-        for (Student s : students) {
-            cmbStudents.addItem(new StudentItem(s.getStudentId(), s.getRollNo(), s.getName()));
-        }
+        UIUtils.loadInBackground(this, "students-dropdown", "load student options",
+                studentDAO::getAllStudents, students -> {
+                    cmbStudents.removeAllItems();
+                    for (Student s : students) {
+                        cmbStudents.addItem(new StudentItem(s.getStudentId(), s.getRollNo(), s.getName()));
+                    }
+                });
     }
 
     private void selectStudentByRoll(String roll) {
@@ -291,19 +295,21 @@ public class ComplaintPanel extends JPanel {
     }
 
     public void loadComplaintData() {
-        tableModel.setRowCount(0);
-        List<Complaint> list = complaintDAO.getAllComplaints();
-        for (Complaint c : list) {
-            tableModel.addRow(new Object[]{
-                c.getComplaintId(),
-                c.getStudentRollNo(),
-                c.getStudentName(),
-                c.getComplaintType(),
-                c.getDescription(),
-                c.getComplaintDate(),
-                c.getStatus()
-            });
-        }
+        UIUtils.loadInBackground(this, "complaints", "load complaints",
+                complaintDAO::getAllComplaints, list -> {
+                    tableModel.setRowCount(0);
+                    for (Complaint c : list) {
+                        tableModel.addRow(new Object[]{
+                            c.getComplaintId(),
+                            c.getStudentRollNo(),
+                            c.getStudentName(),
+                            c.getComplaintType(),
+                            c.getDescription(),
+                            c.getComplaintDate(),
+                            c.getStatus()
+                        });
+                    }
+                });
     }
 
     private void filterTableByStatus() {

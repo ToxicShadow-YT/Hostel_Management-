@@ -79,8 +79,6 @@ public class FeePanel extends JPanel {
         this.logDAO = new ActivityLogDAO();
 
         initComponents();
-        reloadStudentDropdown();
-        loadFeeData();
     }
 
     public FeePanel() {
@@ -174,7 +172,11 @@ public class FeePanel extends JPanel {
         txtRemarks = new JTextField();
         fieldsPanel.add(txtRemarks, gbc);
 
-        formCard.add(new JScrollPane(fieldsPanel), BorderLayout.CENTER);
+        JScrollPane scrollFields = new JScrollPane(fieldsPanel);
+        scrollFields.setBorder(null);
+        scrollFields.setOpaque(false);
+        scrollFields.getViewport().setOpaque(false);
+        formCard.add(scrollFields, BorderLayout.CENTER);
 
         // Form Buttons
         JPanel actionBtnPanel = new JPanel(new GridLayout(3, 2, 8, 8));
@@ -183,7 +185,7 @@ public class FeePanel extends JPanel {
 
         btnAddFee = UIUtils.createPrimaryButton("Add Fee");
         btnUpdateFee = UIUtils.createSuccessButton("Update Fee");
-        btnMarkPaid = UIUtils.createButton("Mark Paid", new Color(13, 148, 136), Color.WHITE);
+        btnMarkPaid = UIUtils.createSuccessButton("Mark Paid");
         btnDeleteFee = UIUtils.createDangerButton("Delete Fee");
         btnClear = UIUtils.createSecondaryButton("Clear Form");
 
@@ -285,11 +287,13 @@ public class FeePanel extends JPanel {
     }
 
     public void reloadStudentDropdown() {
-        cmbStudents.removeAllItems();
-        List<Student> students = studentDAO.getAllStudents();
-        for (Student s : students) {
-            cmbStudents.addItem(new StudentComboItem(s.getStudentId(), s.getRollNo(), s.getName()));
-        }
+        UIUtils.loadInBackground(this, "students-dropdown", "load student options",
+                studentDAO::getAllStudents, students -> {
+                    cmbStudents.removeAllItems();
+                    for (Student s : students) {
+                        cmbStudents.addItem(new StudentComboItem(s.getStudentId(), s.getRollNo(), s.getName()));
+                    }
+                });
     }
 
     private void selectStudentByRoll(String roll) {
@@ -303,20 +307,22 @@ public class FeePanel extends JPanel {
     }
 
     public void loadFeeData() {
-        tableModel.setRowCount(0);
-        List<Fee> fees = feeDAO.getAllFees();
-        for (Fee f : fees) {
-            tableModel.addRow(new Object[]{
-                f.getFeeId(),
-                f.getStudentRollNo(),
-                f.getStudentName(),
-                f.getAmount(),
-                f.getPaymentDate(),
-                f.getPaymentStatus(),
-                f.getPaymentMode(),
-                f.getRemarks()
-            });
-        }
+        UIUtils.loadInBackground(this, "fees", "load fee records",
+                feeDAO::getAllFees, fees -> {
+                    tableModel.setRowCount(0);
+                    for (Fee f : fees) {
+                        tableModel.addRow(new Object[]{
+                            f.getFeeId(),
+                            f.getStudentRollNo(),
+                            f.getStudentName(),
+                            f.getAmount(),
+                            f.getPaymentDate(),
+                            f.getPaymentStatus(),
+                            f.getPaymentMode(),
+                            f.getRemarks()
+                        });
+                    }
+                });
     }
 
     private void handleAddFee() {

@@ -9,6 +9,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap;
 import java.util.List;
 
 /**
@@ -39,8 +40,6 @@ public class ActivityLogPanel extends JPanel {
     public ActivityLogPanel() {
         this.logDAO = new ActivityLogDAO();
         initComponents();
-        loadDropdownOptions();
-        loadLogData();
     }
 
     private void initComponents() {
@@ -224,31 +223,36 @@ public class ActivityLogPanel extends JPanel {
     public void loadDropdownOptions() {
         String currentAction = (String) cmbActionFilter.getSelectedItem();
         String currentUser = (String) cmbUserFilter.getSelectedItem();
+        UIUtils.loadInBackground(this, "log-options", "load activity log filters", () ->
+                new AbstractMap.SimpleImmutableEntry<>(
+                        logDAO.getDistinctActions(),
+                        logDAO.getDistinctUsers()), options -> {
+                    cmbActionFilter.removeAllItems();
+                    cmbActionFilter.addItem("All Actions");
+                    for (String action : options.getKey()) {
+                        cmbActionFilter.addItem(action);
+                    }
+                    if (currentAction != null) {
+                        cmbActionFilter.setSelectedItem(currentAction);
+                    }
 
-        cmbActionFilter.removeAllItems();
-        cmbActionFilter.addItem("All Actions");
-        List<String> actions = logDAO.getDistinctActions();
-        for (String a : actions) {
-            cmbActionFilter.addItem(a);
-        }
-        if (currentAction != null) cmbActionFilter.setSelectedItem(currentAction);
-
-        cmbUserFilter.removeAllItems();
-        cmbUserFilter.addItem("All Users");
-        List<String> users = logDAO.getDistinctUsers();
-        for (String u : users) {
-            cmbUserFilter.addItem(u);
-        }
-        if (currentUser != null) cmbUserFilter.setSelectedItem(currentUser);
+                    cmbUserFilter.removeAllItems();
+                    cmbUserFilter.addItem("All Users");
+                    for (String username : options.getValue()) {
+                        cmbUserFilter.addItem(username);
+                    }
+                    if (currentUser != null) {
+                        cmbUserFilter.setSelectedItem(currentUser);
+                    }
+                });
     }
 
     /**
      * Loads all logs into the table.
      */
     public void loadLogData() {
-        tableModel.setRowCount(0);
-        List<ActivityLog> logs = logDAO.getAllLogs();
-        populateTable(logs);
+        UIUtils.loadInBackground(this, "activity-logs", "load activity logs",
+                logDAO::getAllLogs, logs -> populateTable(logs));
     }
 
     private void handleFilter() {
