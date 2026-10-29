@@ -119,7 +119,7 @@ public class AllocationPanel extends JPanel {
         // Top Title
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
-        headerPanel.add(UIUtils.createHeaderLabel("Room Allocation & Vacate Management"), BorderLayout.WEST);
+        headerPanel.add(UIUtils.createPageHeader("Room Allocation & Vacate Management", "Allocate rooms to students and manage vacating"), BorderLayout.WEST);
         add(headerPanel, BorderLayout.NORTH);
 
         // Center Split: Left = Forms (Allocate & Vacate), Right = Table + Filters
